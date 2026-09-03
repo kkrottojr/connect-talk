@@ -152,12 +152,17 @@ class MetaCloudAPIProviderTests(TestCase):
         with patch("campaigns.sending.requests.post") as mock_post:
             mock_post.return_value = Mock(status_code=200)
             mock_post.return_value.raise_for_status = Mock()
+            mock_post.return_value.json = Mock(return_value={"messages": [{"id": "wamid.teste123"}]})
             result = MetaCloudAPIProvider().send("+5511999998888", "Olá!")
 
         self.assertTrue(result.success)
+        self.assertIn("wamid.teste123", result.detail)
         mock_post.assert_called_once()
         called_url = mock_post.call_args.args[0]
         self.assertIn("123/messages", called_url)
+        # "to" vai sem o "+" do E.164 — é o formato que a API da Meta documenta.
+        sent_payload = mock_post.call_args.kwargs["json"]
+        self.assertEqual(sent_payload["to"], "5511999998888")
 
     @override_settings(WHATSAPP_API_TOKEN="token-de-teste", WHATSAPP_PHONE_NUMBER_ID="123")
     def test_send_http_error_is_captured_not_raised(self):
@@ -168,6 +173,22 @@ class MetaCloudAPIProviderTests(TestCase):
 
         self.assertFalse(result.success)
         self.assertIn("falhou", result.detail)
+
+    @override_settings(WHATSAPP_API_TOKEN="token-de-teste", WHATSAPP_PHONE_NUMBER_ID="123")
+    def test_send_http_error_surfaces_meta_error_message(self):
+        import requests
+
+        error_response = Mock()
+        error_response.json = Mock(return_value={"error": {"message": "Fora da janela de 24h."}})
+        http_error = requests.HTTPError("400 Client Error")
+        http_error.response = error_response
+
+        with patch("campaigns.sending.requests.post") as mock_post:
+            mock_post.return_value.raise_for_status = Mock(side_effect=http_error)
+            result = MetaCloudAPIProvider().send("+5511999998888", "Olá!")
+
+        self.assertFalse(result.success)
+        self.assertIn("Fora da janela de 24h.", result.detail)
 
 
 class TemplateButtonTests(CampaignTestBase):

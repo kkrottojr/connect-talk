@@ -46,7 +46,9 @@ class MetaCloudAPIProvider:
         url = f"https://graph.facebook.com/{version}/{phone_number_id}/messages"
         payload = {
             "messaging_product": "whatsapp",
-            "to": phone,
+            # A Meta documenta o campo "to" sem o "+" do E.164 (só dígitos, com DDI) —
+            # nosso Contact.phone guarda com "+", então tiramos aqui na borda.
+            "to": phone.lstrip("+"),
             "type": "text",
             "text": {"body": message},
         }
@@ -56,9 +58,32 @@ class MetaCloudAPIProvider:
             response = requests.post(url, json=payload, headers=headers, timeout=10)
             response.raise_for_status()
         except requests.RequestException as exc:
-            return SendResult(success=False, detail=f"Falha ao chamar a Meta Cloud API: {exc}")
+            # A Meta manda o motivo real do erro no corpo (ex: fora da janela de 24h,
+            # token expirado, número não verificado) — sem capturar isso, só teríamos
+            # "400 Client Error", inútil pra quem for depurar um envio que falhou.
+            api_detail = ""
+            error_response = getattr(exc, "response", None)
+            if error_response is not None:
+                try:
+                    api_detail = error_response.json().get("error", {}).get("message", "")
+                except ValueError:
+                    pass
+            detail = f"Falha ao chamar a Meta Cloud API: {api_detail or exc}"
+            return SendResult(success=False, detail=detail[:255])
 
-        return SendResult(success=True, detail="Mensagem enviada via Meta WhatsApp Cloud API.")
+        # HTTP 200 aqui só confirma que a Meta ACEITOU a mensagem pra processar —
+        # não garante entrega (isso só se sabe de verdade por um webhook de status,
+        # que este projeto ainda não recebe). O id devolvido ajuda a rastrear o
+        # envio, inclusive nos logs/relatórios do próprio painel da Meta.
+        try:
+            message_id = response.json().get("messages", [{}])[0].get("id", "")
+        except (ValueError, IndexError, AttributeError):
+            message_id = ""
+
+        detail = f"Mensagem aceita pela Meta WhatsApp Cloud API (id: {message_id})." if message_id else (
+            "Mensagem aceita pela Meta WhatsApp Cloud API."
+        )
+        return SendResult(success=True, detail=detail[:255])
 
 
 def render_message(body: str, contact) -> str:
