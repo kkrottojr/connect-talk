@@ -6,13 +6,14 @@
 # o CMD do Dockerfile) — a senha é gerada pelo Render, veja em Environment no
 # painel do serviço depois do deploy.
 #
-# Usa SQLite (sem serviço de banco pago) — ótimo pra portfólio/demo, mas o
-# disco não é persistido entre deploys: cada novo deploy nasce com o banco
-# zerado (o admin e os dados de demonstração são recriados automaticamente).
-#
-# Pra persistência de verdade, troque DB_ENGINE para "postgresql", adicione um
-# serviço `databases:` e as variáveis DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT
-# (o projeto já suporta isso, ver README).
+# Banco: PostgreSQL externo (Neon, Supabase, ou qualquer provedor com connection
+# string). O Render não tem "databases:" gerenciado nesse Blueprint porque o
+# Postgres do próprio Render deixou de ter plano free permanente — por isso as
+# credenciais abaixo são "sync: false": o Render vai pedir pra você colar os
+# valores manualmente no painel (Environment) na primeira vez, e não ficam no
+# git. Depois de criar o banco no Neon/Supabase, preencha DB_NAME/DB_USER/
+# DB_PASSWORD/DB_HOST (e DB_PORT se for diferente de 5432) com os dados da
+# connection string fornecida por eles.
 services:
   - type: web
     name: connect-talk
@@ -33,3 +34,17 @@ services:
         value: dry_run
       - key: WHATSAPP_PROVIDER
         value: mock
+      - key: DB_ENGINE
+        value: postgresql
+      - key: DB_SSLMODE
+        value: require
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"

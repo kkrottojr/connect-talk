@@ -8,5 +8,5 @@ staticfiles/
 .coverage
 *.log
 .DS_Store
-.claude/settings.local.json
+.claude/
 

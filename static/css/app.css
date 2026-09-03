@@ -32,7 +32,9 @@ h1, h2, p { margin-top: 0; }
 .user-card { margin-top: auto; border-top: 1px solid color-mix(in srgb, var(--sidebar-text) 18%, transparent); padding: 14px 8px 0; }
 .user-card strong, .user-card span { display: block; }
 .user-card span { opacity: .7; margin-top: 3px; }
-.logout-button { border: 0; background: transparent; color: inherit; padding: 10px 0 0; cursor: pointer; opacity: .8; }
+.account-link { display: block; color: inherit; text-decoration: none; padding: 10px 0 0; opacity: .8; }
+.account-link:hover, .account-link.active { opacity: 1; text-decoration: underline; }
+.logout-button { border: 0; background: transparent; color: inherit; padding: 8px 0 0; cursor: pointer; opacity: .8; }
 
 .main-area { min-width: 0; }
 .topbar { min-height: 68px; background: var(--surface); border-bottom: 1px solid var(--line); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }

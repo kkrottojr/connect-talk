@@ -94,6 +94,82 @@ class DashboardRoleAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class AccountViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="junior", password="senha-antiga-123", email="antigo@example.com"
+        )
+        self.client.force_login(self.user)
+
+    def test_updates_profile_data(self):
+        response = self.client.post(
+            reverse("account"),
+            {"form": "profile", "first_name": "Junior", "last_name": "Casarotto", "email": "novo@example.com"},
+        )
+        self.assertRedirects(response, reverse("account"))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, "Junior")
+        self.assertEqual(self.user.last_name, "Casarotto")
+        self.assertEqual(self.user.email, "novo@example.com")
+
+    def test_changes_password_and_keeps_session(self):
+        response = self.client.post(
+            reverse("account"),
+            {
+                "form": "password",
+                "current_password": "senha-antiga-123",
+                "new_password": "uma-senha-nova-123",
+                "new_password_confirm": "uma-senha-nova-123",
+            },
+        )
+        self.assertRedirects(response, reverse("account"))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("uma-senha-nova-123"))
+
+        # A sessão continua válida (não foi deslogado pela troca de senha).
+        dashboard_response = self.client.get(reverse("dashboard"))
+        self.assertNotEqual(dashboard_response.status_code, 302)
+
+    def test_rejects_wrong_current_password(self):
+        self.client.post(
+            reverse("account"),
+            {
+                "form": "password",
+                "current_password": "senha-errada",
+                "new_password": "uma-senha-nova-123",
+                "new_password_confirm": "uma-senha-nova-123",
+            },
+        )
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("senha-antiga-123"))
+
+    def test_rejects_mismatched_confirmation(self):
+        self.client.post(
+            reverse("account"),
+            {
+                "form": "password",
+                "current_password": "senha-antiga-123",
+                "new_password": "uma-senha-nova-123",
+                "new_password_confirm": "outra-coisa-123",
+            },
+        )
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("senha-antiga-123"))
+
+    def test_rejects_weak_password(self):
+        self.client.post(
+            reverse("account"),
+            {
+                "form": "password",
+                "current_password": "senha-antiga-123",
+                "new_password": "123456",
+                "new_password_confirm": "123456",
+            },
+        )
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("senha-antiga-123"))
+
+
 class EnsureSuperuserCommandTests(TestCase):
     def test_does_nothing_without_env_vars(self):
         call_command("ensure_superuser")

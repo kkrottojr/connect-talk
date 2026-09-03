@@ -1,0 +1,56 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}Minha conta · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>Minha conta</h1></div>
+</div>
+
+<div class="card">
+    <h2>Dados pessoais</h2>
+    <form class="import-form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="form" value="profile">
+        <div class="field-row">
+            <label for="first_name">Nome</label>
+            <input type="text" id="first_name" name="first_name" value="{{ request.user.first_name }}">
+        </div>
+        <div class="field-row">
+            <label for="last_name">Sobrenome</label>
+            <input type="text" id="last_name" name="last_name" value="{{ request.user.last_name }}">
+        </div>
+        <div class="field-row">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" value="{{ request.user.email }}">
+        </div>
+        <div class="field-row">
+            <label>Usuário</label>
+            <input type="text" value="{{ request.user.username }}" disabled>
+            <small>O nome de usuário não pode ser alterado por aqui.</small>
+        </div>
+        <button class="button button-primary" type="submit">Salvar dados</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Trocar senha</h2>
+    <form class="import-form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="form" value="password">
+        <div class="field-row">
+            <label for="current_password">Senha atual</label>
+            <input type="password" id="current_password" name="current_password" required>
+        </div>
+        <div class="field-row">
+            <label for="new_password">Nova senha</label>
+            <input type="password" id="new_password" name="new_password" required>
+        </div>
+        <div class="field-row">
+            <label for="new_password_confirm">Confirmar nova senha</label>
+            <input type="password" id="new_password_confirm" name="new_password_confirm" required>
+        </div>
+        <button class="button button-primary" type="submit">Trocar senha</button>
+    </form>
+</div>
+{% endblock %}

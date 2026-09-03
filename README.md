@@ -1,8 +1,20 @@
 # Connect Talk — plataforma de atendimento e comunicação via WhatsApp
 
+[![Testes](https://github.com/kkrottojr/connect-talk/actions/workflows/tests.yml/badge.svg)](https://github.com/kkrottojr/connect-talk/actions/workflows/tests.yml)
+
+**Demo no ar:** https://connect-talk-graq.onrender.com (pode levar até ~1 minuto pra "acordar" — plano free do Render hiberna sem uso)
+
 SaaS multiempresa (multi-tenant) de atendimento e comunicação via WhatsApp — campanhas, conversas e times de atendimento —, construído em Django.
 
 Este projeto foi construído como estudo de caso de produto: da estrutura multiempresa até um fluxo completo de campanha — importar contatos, criar template com botões de decisão, montar e disparar campanha, e tratar a resposta do contato — com uma arquitetura de disparo pensada para nunca enviar mensagem real por acidente.
+
+## Avaliar em 2 minutos
+
+1. Acesse a demo (link acima) e entre com um destes usuários (empresa "Empresa Exemplo", já populada com contatos/templates/campanhas):
+   - **Gestor** — usuário `gestor`, senha `demo12345` (acesso a templates, campanhas, agendamentos e conversas)
+   - **Operador** — usuário `operador`, senha `demo12345` (só a fila de conversas — "assumir atendimento" e interagir)
+2. Veja o **Dashboard** (métricas reais) → **Campanhas** (uma já disparada em modo teste) → **Conversas** (clique num contato da fila "Aguardando atendimento" pra ver a tela de chat).
+3. Todo envio é simulado — ver "Modo de envio" abaixo pra entender a trava de segurança que impede mensagem real por acidente.
 
 ## Funcionalidades
 
@@ -74,7 +86,21 @@ O repositório já tem um [render.yaml](render.yaml) (Blueprint) pronto:
 2. O Render lê o `render.yaml`, builda pelo [Dockerfile](Dockerfile) e sobe um serviço web (plano free) já com `DJANGO_SECRET_KEY` e a senha do admin geradas automaticamente.
 3. O plano free não dá acesso a Shell — por isso o próprio container já cria o superusuário e popula os dados de demonstração sozinho a cada start (`ensure_superuser` + `seed_demo_data`, ambos idempotentes, encadeados no `CMD` do [Dockerfile](Dockerfile)). Usuário: `admin`. Pra pegar a senha gerada: painel do serviço → **Environment** → `DJANGO_SUPERUSER_PASSWORD`.
 
-Usa SQLite por padrão — sem custo de banco, mas o disco não persiste entre deploys (cada novo deploy nasce zerado; o admin e os dados de demonstração são recriados sozinhos, então isso não exige nenhuma ação manual). Pra persistência de verdade, troque `DB_ENGINE` para `postgresql` e adicione um banco Postgres (o projeto já suporta, mesma configuração usada no Docker Compose local). O hostname público do Render é reconhecido automaticamente (`RENDER_EXTERNAL_HOSTNAME` em [connect_talk/settings.py](connect_talk/settings.py)) — não precisa configurar `DJANGO_ALLOWED_HOSTS` na mão.
+### Banco de dados persistente (PostgreSQL externo)
+
+O Render deixou de ter plano free permanente pra Postgres, então o `render.yaml` aponta pra um **Postgres externo** — funciona com qualquer provedor, mas o mais simples pra portfólio é o [Neon](https://neon.tech) (tier free permanente):
+
+1. Crie uma conta no Neon e um projeto novo (Postgres 16+).
+2. No painel do projeto, copie a **connection string** (formato `postgresql://usuario:senha@host/nome_do_banco?sslmode=require`).
+3. No Render, abra o serviço **connect-talk** → **Environment** e preencha, a partir dessa connection string:
+   - `DB_NAME` — o nome do banco (depois da última `/`)
+   - `DB_USER` — o usuário (antes de `:` na connection string)
+   - `DB_PASSWORD` — a senha
+   - `DB_HOST` — o host (depois de `@`)
+   - (`DB_ENGINE=postgresql`, `DB_SSLMODE=require` e `DB_PORT=5432` já vêm prontos do `render.yaml`)
+4. Salve — o Render redeploya sozinho, já migrando e populando os dados de demonstração no banco novo (`migrate` + `ensure_superuser` + `seed_demo_data`, mesma cadeia do `CMD` do Dockerfile). A partir daqui, os dados (e a senha que você trocar) sobrevivem a novos deploys.
+
+Sem essas variáveis preenchidas, o app cai de volta pro SQLite local — funciona, mas sem persistir entre deploys (cada novo deploy nasce zerado). O hostname público do Render é reconhecido automaticamente (`RENDER_EXTERNAL_HOSTNAME` em [connect_talk/settings.py](connect_talk/settings.py)) — não precisa configurar `DJANGO_ALLOWED_HOSTS` na mão.
 
 ## Variáveis de ambiente
 

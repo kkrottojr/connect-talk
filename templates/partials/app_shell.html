@@ -25,6 +25,7 @@
         <div class="user-card">
             <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
             <span>{% if membership %}{{ membership.get_role_display }}{% else %}Sem empresa{% endif %}</span>
+            <a href="{% url 'account' %}" class="account-link {% if nav_active == 'account' %}active{% endif %}">Minha conta</a>
             <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
                 <button type="submit" class="logout-button">Sair</button>
