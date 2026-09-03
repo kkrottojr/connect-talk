@@ -1,10 +1,14 @@
 # Blueprint do Render (render.com/docs/blueprint-spec). Em render.com/deploys,
 # "New +" > "Blueprint" apontando pra este repositório lê este arquivo sozinho.
 #
+# O plano free não dá acesso a Shell, então o próprio container cria o admin
+# sozinho a cada start (ver dashboard/management/commands/ensure_superuser.py e
+# o CMD do Dockerfile) — a senha é gerada pelo Render, veja em Environment no
+# painel do serviço depois do deploy.
+#
 # Usa SQLite (sem serviço de banco pago) — ótimo pra portfólio/demo, mas o
 # disco não é persistido entre deploys: cada novo deploy nasce com o banco
-# zerado. Rode `python manage.py seed_demo_data` pelo Shell do Render (depois
-# de criar um superusuário com `createsuperuser`) sempre que fizer isso.
+# zerado (o admin e os dados de demonstração são recriados automaticamente).
 #
 # Pra persistência de verdade, troque DB_ENGINE para "postgresql", adicione um
 # serviço `databases:` e as variáveis DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT
@@ -18,6 +22,12 @@ services:
       - key: DJANGO_DEBUG
         value: "False"
       - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: admin
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: admin@example.com
+      - key: DJANGO_SUPERUSER_PASSWORD
         generateValue: true
       - key: WHATSAPP_SEND_MODE
         value: dry_run

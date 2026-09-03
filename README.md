@@ -71,10 +71,10 @@ docker compose exec web python manage.py createsuperuser
 O repositório já tem um [render.yaml](render.yaml) (Blueprint) pronto:
 
 1. Em [render.com](https://render.com), **New +** → **Blueprint**, aponte para este repositório.
-2. O Render lê o `render.yaml`, builda pelo [Dockerfile](Dockerfile) e sobe um serviço web (plano free) já com `DJANGO_SECRET_KEY` gerada automaticamente.
-3. Pelo **Shell** do serviço no painel do Render: `python manage.py createsuperuser` e, se quiser, `python manage.py seed_demo_data`.
+2. O Render lê o `render.yaml`, builda pelo [Dockerfile](Dockerfile) e sobe um serviço web (plano free) já com `DJANGO_SECRET_KEY` e a senha do admin geradas automaticamente.
+3. O plano free não dá acesso a Shell — por isso o próprio container já cria o superusuário e popula os dados de demonstração sozinho a cada start (`ensure_superuser` + `seed_demo_data`, ambos idempotentes, encadeados no `CMD` do [Dockerfile](Dockerfile)). Usuário: `admin`. Pra pegar a senha gerada: painel do serviço → **Environment** → `DJANGO_SUPERUSER_PASSWORD`.
 
-Usa SQLite por padrão — sem custo de banco, mas o disco não persiste entre deploys (cada novo deploy nasce zerado; rode o passo 3 de novo quando isso acontecer). Pra persistência de verdade, troque `DB_ENGINE` para `postgresql` e adicione um banco Postgres (o projeto já suporta, mesma configuração usada no Docker Compose local). O hostname público do Render é reconhecido automaticamente (`RENDER_EXTERNAL_HOSTNAME` em [connect_talk/settings.py](connect_talk/settings.py)) — não precisa configurar `DJANGO_ALLOWED_HOSTS` na mão.
+Usa SQLite por padrão — sem custo de banco, mas o disco não persiste entre deploys (cada novo deploy nasce zerado; o admin e os dados de demonstração são recriados sozinhos, então isso não exige nenhuma ação manual). Pra persistência de verdade, troque `DB_ENGINE` para `postgresql` e adicione um banco Postgres (o projeto já suporta, mesma configuração usada no Docker Compose local). O hostname público do Render é reconhecido automaticamente (`RENDER_EXTERNAL_HOSTNAME` em [connect_talk/settings.py](connect_talk/settings.py)) — não precisa configurar `DJANGO_ALLOWED_HOSTS` na mão.
 
 ## Variáveis de ambiente
 

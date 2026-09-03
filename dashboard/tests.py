@@ -1,3 +1,6 @@
+import os
+from unittest import mock
+
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
@@ -89,6 +92,38 @@ class DashboardRoleAccessTests(TestCase):
 
         response = self.client.get(reverse("dashboard"))
         self.assertEqual(response.status_code, 200)
+
+
+class EnsureSuperuserCommandTests(TestCase):
+    def test_does_nothing_without_env_vars(self):
+        call_command("ensure_superuser")
+        self.assertFalse(get_user_model().objects.exists())
+
+    @mock.patch.dict(
+        os.environ,
+        {
+            "DJANGO_SUPERUSER_USERNAME": "admin",
+            "DJANGO_SUPERUSER_PASSWORD": "uma-senha-bem-forte-123",
+            "DJANGO_SUPERUSER_EMAIL": "admin@example.com",
+        },
+    )
+    def test_creates_superuser_from_env_vars(self):
+        call_command("ensure_superuser")
+
+        user = get_user_model().objects.get(username="admin")
+        self.assertTrue(user.is_superuser)
+        self.assertTrue(user.is_staff)
+        self.assertTrue(user.check_password("uma-senha-bem-forte-123"))
+
+    @mock.patch.dict(
+        os.environ,
+        {"DJANGO_SUPERUSER_USERNAME": "admin", "DJANGO_SUPERUSER_PASSWORD": "uma-senha-bem-forte-123"},
+    )
+    def test_is_idempotent(self):
+        call_command("ensure_superuser")
+        call_command("ensure_superuser")
+
+        self.assertEqual(get_user_model().objects.filter(username="admin").count(), 1)
 
 
 class SeedDemoDataCommandTests(TestCase):
