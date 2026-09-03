@@ -117,9 +117,19 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Serve os estáticos direto pelo próprio processo Django (sem nginx na frente) —
 # suficiente pro volume deste projeto e simplifica o deploy num único serviço.
+# O storage com manifesto (hash no nome do arquivo) só entra em produção: ele exige
+# um staticfiles.json gerado por "collectstatic" (feito no build do Dockerfile) — em
+# DEBUG (dev local e CI) ninguém roda collectstatic antes dos testes, e qualquer
+# template com {% static %} quebraria com "Missing staticfiles manifest entry".
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+            if not DEBUG
+            else "django.contrib.staticfiles.storage.StaticFilesStorage"
+        )
+    },
 }
 
 LOGIN_URL = "login"
