@@ -157,3 +157,18 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
+# Por padrão, o Django só manda log pro console quando DEBUG=True — em produção
+# (DEBUG=False) um erro 500 fica silencioso, sem nenhum traceback nos logs. Isso
+# força os erros a sempre aparecerem no console (stdout), que é o que plataformas
+# como o Render capturam e mostram na aba Logs.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {"class": "logging.StreamHandler"},
+    },
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}
+
