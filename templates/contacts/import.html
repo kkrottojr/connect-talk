@@ -1,0 +1,103 @@
+{% extends "partials/app_shell.html" %}
+{% load contacts_extras %}
+
+{% block title %}Importar contatos · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>Importar contatos</h1><p class="muted">Envie uma planilha .csv ou .xlsx, mapeie as colunas e confirme o consentimento.</p></div>
+    <a class="button" href="{% url 'contacts:list' %}">Voltar para contatos</a>
+</div>
+
+{% if stage == "upload" %}
+    <div class="card">
+        <form class="import-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="stage" value="upload">
+            <div class="field-row">
+                <label for="file">Arquivo (.csv ou .xlsx)</label>
+                <input type="file" id="file" name="file" accept=".csv,.xlsx" required>
+                {% if upload_error %}<small class="muted" style="color: light-dark(#a31717, #ff9a9a);">{{ upload_error }}</small>{% endif %}
+            </div>
+            <button class="button button-primary" type="submit">Continuar</button>
+        </form>
+    </div>
+
+{% elif stage == "mapping" %}
+    <div class="card">
+        <p class="muted">{{ row_count }} linha{{ row_count|pluralize }} detectada{{ row_count|pluralize }} no arquivo. Escolha qual coluna corresponde a cada campo.</p>
+
+        <form class="import-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="stage" value="mapping">
+
+            {% for field, label, required in target_fields %}
+                <div class="field-row">
+                    <label for="map_{{ field }}">{{ label }}{% if required %} *{% endif %}</label>
+                    <select id="map_{{ field }}" name="map_{{ field }}">
+                        {% if not required %}<option value="">Não importar</option>{% endif %}
+                        {% for idx, column_name in header %}
+                            <option value="{{ idx }}" {% if selected|get_item:field == idx|stringformat:"s" %}selected{% endif %}>{{ column_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endfor %}
+
+            <div class="field-row">
+                <label for="consent_source">Origem do consentimento</label>
+                <input type="text" id="consent_source" name="consent_source" placeholder="Ex: formulário do site, lista opt-in da equipe de vendas" value="{{ consent_source|default:'' }}">
+                <small>Descreva de onde esses contatos deram permissão para serem contatados.</small>
+            </div>
+
+            <div class="consent-row">
+                <input type="checkbox" id="consent_confirm" name="consent_confirm">
+                <label for="consent_confirm" style="margin:0; font-weight: 400;">Confirmo que tenho consentimento (opt-in) para contatar essas pessoas por WhatsApp.</label>
+            </div>
+
+            <button class="button button-primary" type="submit">Importar contatos</button>
+        </form>
+
+        <h2 style="margin-top: 24px; font-size: 1rem;">Pré-visualização</h2>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>{% for idx, column_name in header %}<th>{{ column_name }}</th>{% endfor %}</tr>
+                </thead>
+                <tbody>
+                    {% for row in preview_rows %}
+                        <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% elif stage == "summary" %}
+    <section class="summary-grid">
+        <article><span>Importados</span><strong>{{ created }}</strong></article>
+        <article><span>Ignorados (inválidos)</span><strong>{{ skipped_invalid|length }}</strong></article>
+        <article><span>Ignorados (duplicados)</span><strong>{{ skipped_duplicate|length }}</strong></article>
+    </section>
+
+    {% if skipped_invalid %}
+        <div class="card" style="margin-bottom: 16px;">
+            <h2 style="font-size: 1rem;">Linhas inválidas</h2>
+            <ul class="error-list">
+                {% for line_no, reason in skipped_invalid %}<li>Linha {{ line_no }}: {{ reason }}</li>{% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if skipped_duplicate %}
+        <div class="card" style="margin-bottom: 16px;">
+            <h2 style="font-size: 1rem;">Duplicados (já existiam na empresa)</h2>
+            <ul class="error-list">
+                {% for line_no, phone in skipped_duplicate %}<li>Linha {{ line_no }}: {{ phone }}</li>{% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <a class="button button-primary" href="{% url 'contacts:list' %}">Ver contatos</a>
+    <a class="button" href="{% url 'contacts:import' %}">Importar outro arquivo</a>
+{% endif %}
+{% endblock %}

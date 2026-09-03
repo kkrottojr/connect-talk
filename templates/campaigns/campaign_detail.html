@@ -1,0 +1,116 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}{{ campaign.name }} · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>{{ campaign.name }}</h1><p class="muted">Template: {{ campaign.template.name }}{% if campaign.segment_tag %} · Segmento: {{ campaign.segment_tag }}{% endif %}</p></div>
+    <a class="button" href="{% url 'campaigns:list' %}">Voltar</a>
+</div>
+
+{% if send_mode == "test" %}
+    <div class="mode-banner mode-test">
+        <div>
+            <strong>Modo teste</strong>
+            <span>
+                Só são enviados (simulados) para números liberados na empresa
+                {% if allowlist %}({{ allowlist|join:", " }}){% else %}— nenhum número liberado ainda, todos os contatos serão bloqueados{% endif %}.
+                Configure em Admin › Empresas.
+            </span>
+        </div>
+    </div>
+{% else %}
+    <div class="mode-banner mode-dry_run">
+        <div>
+            <strong>Modo simulação (dry-run)</strong>
+            <span>Nenhuma mensagem real é enviada — este é o modo padrão, seguro para demonstração.</span>
+        </div>
+    </div>
+{% endif %}
+
+{% if campaign.status == "rascunho" %}
+    <div class="card">
+        <p><strong>{{ recipients_count }}</strong> contato{{ recipients_count|pluralize }} elegíve{{ recipients_count|pluralize:"l,is" }} (ativos e com consentimento{% if campaign.segment_tag %}, na tag "{{ campaign.segment_tag }}"{% endif %}).</p>
+
+        {% if campaign.template.buttons.all %}
+            <div class="pill-row" style="margin-bottom: 14px;">
+                {% for button in campaign.template.buttons.all %}
+                    <span class="pill {% if button.action == 'parar' %}pill-warn{% endif %}">{{ button.label }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if preview %}
+            <h2 style="font-size: 1rem;">Pré-visualização</h2>
+            <div class="preview-list">
+                {% for item in preview %}
+                    <div class="preview-item">
+                        <strong>{{ item.contact.name }} · {{ item.contact.phone }}</strong>
+                        <p>{{ item.message }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if campaign.scheduled_at %}
+            <div class="mode-banner mode-test" style="margin: 16px 0;">
+                <div>
+                    <strong>Agendada para {{ campaign.scheduled_at|date:"d/m/Y H:i" }}</strong>
+                    <span>Dispara sozinha nesse horário se houver um agendador externo rodando (ver README), ou clique em "Executar agendamentos pendentes agora" na tela de Agendamentos.</span>
+                </div>
+            </div>
+            <form method="post" action="{% url 'campaigns:schedule' pk=campaign.pk %}" style="margin-bottom: 14px;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="cancel">
+                <button class="button" type="submit">Cancelar agendamento</button>
+            </form>
+        {% elif recipients_count > 0 %}
+            <form class="import-form" method="post" action="{% url 'campaigns:schedule' pk=campaign.pk %}" style="max-width: 360px; margin-bottom: 14px;">
+                {% csrf_token %}
+                <div class="field-row">
+                    <label for="scheduled_at">Agendar para depois (opcional)</label>
+                    <input type="datetime-local" id="scheduled_at" name="scheduled_at">
+                </div>
+                <button class="button" type="submit">Agendar</button>
+            </form>
+        {% endif %}
+
+        {% if recipients_count == 0 %}
+            <p class="muted">Nenhum contato elegível para essa campanha — importe contatos com consentimento ou ajuste o segmento.</p>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <button class="button button-primary" type="submit">Confirmar disparo agora (simulado)</button>
+            </form>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="summary-grid">
+        <article><span>Simulados / enviados (teste)</span><strong>{{ logs|length }}</strong></article>
+        <article><span>Modo usado</span><strong>{{ campaign.send_mode_used }}</strong></article>
+        <article><span>Disparada em</span><strong>{{ campaign.dispatched_at|date:"d/m/Y H:i" }}</strong></article>
+    </div>
+
+    <div class="card table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Contato</th><th>Telefone</th><th>Status</th><th>Detalhe</th></tr></thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.contact.name|default:"—" }}</td>
+                    <td>{{ log.phone }}</td>
+                    <td>
+                        {% if log.status == "bloqueado" or log.status == "falhou" %}
+                            <span class="badge badge-warn">{{ log.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge badge-ok">{{ log.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ log.detail }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+{% endblock %}

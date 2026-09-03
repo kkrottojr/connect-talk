@@ -1,0 +1,38 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}Equipe · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>Equipe</h1><p class="muted">{{ members|length }} membro{{ members|length|pluralize }} em {{ organization.name }}.</p></div>
+    <a class="button button-primary" href="{% url 'tenants:team_add' %}">Adicionar membro</a>
+</div>
+
+<div class="card table-wrap">
+    <table class="data-table">
+        <thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Desde</th><th></th></tr></thead>
+        <tbody>
+            {% for member in members %}
+            <tr>
+                <td>{{ member.user.get_full_name|default:member.user.username }}{% if member.user_id == request.user.id %} <span class="muted">(você)</span>{% endif %}</td>
+                <td>{{ member.user.email|default:"—" }}</td>
+                <td>{{ member.get_role_display }}</td>
+                <td>
+                    {% if member.is_active %}
+                        <span class="badge badge-ok">Ativo</span>
+                    {% else %}
+                        <span class="badge badge-off">Inativo</span>
+                    {% endif %}
+                </td>
+                <td>{{ member.created_at|date:"d/m/Y" }}</td>
+                <td>
+                    {% if member.user_id != request.user.id %}
+                        <a href="{% url 'tenants:team_edit' pk=member.pk %}">Editar</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

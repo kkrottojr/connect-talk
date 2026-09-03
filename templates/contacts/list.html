@@ -1,0 +1,53 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}Contatos · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>Contatos</h1><p class="muted">{{ contacts|length }} contato{{ contacts|length|pluralize }} em {{ organization.name }}.</p></div>
+    <a class="button button-primary" href="{% url 'contacts:import' %}">Importar contatos</a>
+</div>
+
+<div class="card table-wrap">
+    {% if contacts %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>E-mail</th>
+                    <th>Tags</th>
+                    <th>Consentimento</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in contacts %}
+                <tr>
+                    <td>{{ contact.name }}</td>
+                    <td>{{ contact.phone }}</td>
+                    <td>{{ contact.email|default:"—" }}</td>
+                    <td>{{ contact.tags|default:"—" }}</td>
+                    <td>
+                        {% if contact.consent_given %}
+                            <span class="badge badge-ok">Registrado</span>
+                        {% else %}
+                            <span class="badge badge-off">Sem registro</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if contact.opted_out %}
+                            <span class="badge badge-warn">Descadastrado</span>
+                        {% else %}
+                            <span class="badge badge-off">Ativo</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="muted">Nenhum contato importado ainda. <a href="{% url 'contacts:import' %}">Importe uma planilha</a> para começar.</p>
+    {% endif %}
+</div>
+{% endblock %}

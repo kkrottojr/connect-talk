@@ -1,0 +1,41 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}Templates · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>Templates de mensagem</h1><p class="muted">{{ templates|length }} template{{ templates|length|pluralize }} em {{ organization.name }}.</p></div>
+    <a class="button button-primary" href="{% url 'campaigns:template_create' %}">Novo template</a>
+</div>
+
+<div class="card table-wrap">
+    {% if templates %}
+        <table class="data-table">
+            <thead><tr><th>Nome</th><th>Mensagem</th><th>Botões</th><th>Atualizado em</th><th></th></tr></thead>
+            <tbody>
+                {% for template in templates %}
+                <tr>
+                    <td>{{ template.name }}</td>
+                    <td>{{ template.body|truncatechars:80 }}</td>
+                    <td>
+                        {% if template.buttons.all %}
+                            <div class="pill-row">
+                                {% for button in template.buttons.all %}
+                                    <span class="pill {% if button.action == 'parar' %}pill-warn{% endif %}">{{ button.label }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ template.updated_at|date:"d/m/Y H:i" }}</td>
+                    <td><a href="{% url 'campaigns:template_edit' pk=template.pk %}">Editar</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="muted">Nenhum template ainda. <a href="{% url 'campaigns:template_create' %}">Crie o primeiro</a> para poder montar uma campanha.</p>
+    {% endif %}
+</div>
+{% endblock %}

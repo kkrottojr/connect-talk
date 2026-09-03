@@ -1,0 +1,68 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}{% if target %}Editar membro{% else %}Adicionar membro{% endif %} · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>{% if target %}Editar membro{% else %}Adicionar membro{% endif %}</h1></div>
+    <a class="button" href="{% url 'tenants:team_list' %}">Voltar</a>
+</div>
+
+<div class="card">
+    {% if target %}
+        <p><strong>{{ target.user.get_full_name|default:target.user.username }}</strong> · {{ target.user.email|default:"sem e-mail" }}</p>
+
+        <form class="import-form" method="post" style="margin-bottom: 18px;">
+            {% csrf_token %}
+            <div class="field-row">
+                <label for="role">Perfil</label>
+                <select id="role" name="role">
+                    {% for value, label in roles %}
+                        <option value="{{ value }}" {% if target.role == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="button button-primary" type="submit">Salvar perfil</button>
+        </form>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle_active">
+            <button class="button {% if target.is_active %}button-danger{% else %}button-primary{% endif %}" type="submit">
+                {% if target.is_active %}Desativar membro{% else %}Reativar membro{% endif %}
+            </button>
+        </form>
+    {% else %}
+        <form class="import-form" method="post">
+            {% csrf_token %}
+            <div class="field-row">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" name="username" value="{{ username }}" required>
+                <small>Se esse usuário já existir no Connect Talk, só vinculamos ele à sua empresa com o perfil escolhido.</small>
+            </div>
+            <div class="field-row">
+                <label for="name">Nome</label>
+                <input type="text" id="name" name="name" value="{{ name }}">
+            </div>
+            <div class="field-row">
+                <label for="email">E-mail</label>
+                <input type="text" id="email" name="email" value="{{ email }}">
+            </div>
+            <div class="field-row">
+                <label for="password">Senha inicial</label>
+                <input type="password" id="password" name="password">
+                <small>Só é usada se o usuário ainda não existir.</small>
+            </div>
+            <div class="field-row">
+                <label for="role">Perfil</label>
+                <select id="role" name="role">
+                    {% for value, label in roles %}
+                        <option value="{{ value }}" {% if role == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="button button-primary" type="submit">Adicionar</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

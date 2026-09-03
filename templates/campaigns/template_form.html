@@ -1,0 +1,44 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}{% if template %}Editar template{% else %}Novo template{% endif %} · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>{% if template %}Editar template{% else %}Novo template{% endif %}</h1>
+        <p class="muted">Use {% verbatim %}{{nome}}{% endverbatim %} e {% verbatim %}{{telefone}}{% endverbatim %} para personalizar cada envio.</p>
+    </div>
+    <a class="button" href="{% url 'campaigns:template_list' %}">Voltar</a>
+</div>
+
+<div class="card">
+    <form class="import-form" method="post">
+        {% csrf_token %}
+        <div class="field-row">
+            <label for="name">Nome do template</label>
+            <input type="text" id="name" name="name" value="{{ name }}" required>
+        </div>
+        <div class="field-row">
+            <label for="body">Mensagem</label>
+            <textarea id="body" name="body" required>{{ body }}</textarea>
+            <small>Ex: "Olá {% verbatim %}{{nome}}{% endverbatim %}, temos uma novidade para você!"</small>
+        </div>
+
+        <div class="field-row">
+            <label>Botões de decisão (opcional, até 3)</label>
+            <small>O texto de cada botão é seu — quem responde escolhe uma opção. "Prosseguir" transfere o contato ao atendente; "Parar" bloqueia o contato para próximos envios.</small>
+            {% for row in button_rows %}
+                <div class="button-row">
+                    <input type="text" name="button_label_{{ row.index }}" value="{{ row.label }}" maxlength="20" placeholder="Botão {{ row.index }}, ex: Saiba mais">
+                    <select name="button_action_{{ row.index }}">
+                        <option value="prosseguir" {% if row.action == "prosseguir" %}selected{% endif %}>Prosseguir (transfere ao atendente)</option>
+                        <option value="parar" {% if row.action == "parar" %}selected{% endif %}>Parar (bloqueia o contato)</option>
+                    </select>
+                </div>
+            {% endfor %}
+        </div>
+
+        <button class="button button-primary" type="submit">Salvar template</button>
+    </form>
+</div>
+{% endblock %}

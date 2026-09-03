@@ -1,0 +1,34 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}Nova campanha · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>Nova campanha</h1><p class="muted">Escolha um template e, se quiser, restrinja por tag.</p></div>
+    <a class="button" href="{% url 'campaigns:list' %}">Voltar</a>
+</div>
+
+<div class="card">
+    <form class="import-form" method="post">
+        {% csrf_token %}
+        <div class="field-row">
+            <label for="name">Nome da campanha</label>
+            <input type="text" id="name" name="name" value="{{ name }}" required>
+        </div>
+        <div class="field-row">
+            <label for="template">Template de mensagem</label>
+            <select id="template" name="template" required>
+                {% for t in templates %}
+                    <option value="{{ t.pk }}">{{ t.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="field-row">
+            <label for="segment_tag">Segmento (tag, opcional)</label>
+            <input type="text" id="segment_tag" name="segment_tag" value="{{ segment_tag }}" placeholder="Ex: cliente vip">
+            <small>Deixe em branco para incluir todos os contatos com consentimento.</small>
+        </div>
+        <button class="button button-primary" type="submit">Continuar</button>
+    </form>
+</div>
+{% endblock %}

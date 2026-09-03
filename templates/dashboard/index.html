@@ -1,0 +1,67 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}Visão geral · Connect Talk{% endblock %}
+
+{% block content %}
+    {% if organization %}
+        <div class="page-heading">
+            <div><h1>Visão geral</h1><p class="muted">A estrutura multiempresa já está funcionando.</p></div>
+            <a class="button button-primary" href="{% url 'campaigns:create' %}">Nova campanha</a>
+        </div>
+        <section class="metric-grid" aria-label="Indicadores">
+            <article><span>Contatos importados</span><strong>{{ metrics.contacts }}</strong><small><a href="{% url 'contacts:list' %}">Ver contatos</a></small></article>
+            <article><span>Contatos bloqueados</span><strong>{{ metrics.blocked }}</strong><small>Descadastrados via botão "Parar"</small></article>
+            <article><span>Campanhas</span><strong>{{ metrics.campaigns }}</strong><small>{{ metrics.campaigns_draft }} em rascunho · <a href="{% url 'campaigns:list' %}">Ver campanhas</a></small></article>
+            <article><span>Mensagens simuladas</span><strong>{{ metrics.delivered }}</strong><small>Modo {{ send_mode }} — nenhum envio real</small></article>
+            <article><span>Respostas recebidas</span><strong>{{ metrics.replies }}</strong><small><a href="{% url 'conversations:list' %}">Ver conversas</a></small></article>
+            <article><span>Leads em atendimento</span><strong>{{ metrics.open_leads }}</strong><small>Aguardando equipe humana</small></article>
+        </section>
+
+        <section class="setup-panel">
+            <h2>Próximas etapas do MVP</h2>
+            <ol>
+                <li class="done"><span>Concluído</span>Estrutura web, autenticação e empresas</li>
+                <li class="done"><span>Concluído</span>Importação e validação de Excel/CSV</li>
+                <li class="done"><span>Concluído</span>Campanhas e templates (disparo simulado)</li>
+                <li class="done"><span>Concluído</span>Conversas (resposta simulada aos botões de decisão)</li>
+                <li class="done"><span>Concluído</span>Permissões por perfil e agendamento de campanhas</li>
+                <li><span>Próximo</span>Mapeamento de templates aprovados pela Meta, para envio real</li>
+            </ol>
+        </section>
+
+        <section class="card table-wrap" style="margin-top: 16px;">
+            <h2 style="font-size: 1rem;">Campanhas recentes</h2>
+            {% if recent_campaigns %}
+                <table class="data-table">
+                    <thead><tr><th>Nome</th><th>Template</th><th>Status</th><th>Modo</th><th>Criada em</th></tr></thead>
+                    <tbody>
+                        {% for campaign in recent_campaigns %}
+                        <tr>
+                            <td><a href="{% url 'campaigns:detail' pk=campaign.pk %}">{{ campaign.name }}</a></td>
+                            <td>{{ campaign.template.name }}</td>
+                            <td>
+                                {% if campaign.status == "concluida" %}
+                                    <span class="badge badge-ok">Concluída</span>
+                                {% else %}
+                                    <span class="badge badge-off">Rascunho</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ campaign.send_mode_used|default:"—" }}</td>
+                            <td>{{ campaign.created_at|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="muted">Nenhuma campanha criada ainda. <a href="{% url 'campaigns:create' %}">Crie a primeira</a>.</p>
+            {% endif %}
+        </section>
+    {% else %}
+        <section class="empty-state">
+            <span class="empty-icon">C</span>
+            <h1>Nenhuma empresa vinculada</h1>
+            <p>Um administrador precisa criar a empresa e vincular seu usuário no painel administrativo.</p>
+            {% if request.user.is_staff %}<a class="button button-primary" href="/admin/tenants/organization/add/">Criar primeira empresa</a>{% endif %}
+        </section>
+    {% endif %}
+{% endblock %}

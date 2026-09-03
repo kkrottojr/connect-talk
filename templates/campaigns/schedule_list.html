@@ -1,0 +1,44 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}Agendamentos · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>Agendamentos</h1><p class="muted">Campanhas programadas para disparar (simulado) numa data futura.</p></div>
+    <form method="post" action="{% url 'campaigns:run_due' %}">
+        {% csrf_token %}
+        <button class="button button-primary" type="submit">Executar agendamentos pendentes agora</button>
+    </form>
+</div>
+
+<div class="card table-wrap">
+    {% if scheduled_campaigns %}
+        <table class="data-table">
+            <thead><tr><th>Nome</th><th>Template</th><th>Agendada para</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for campaign in scheduled_campaigns %}
+                <tr>
+                    <td><a href="{% url 'campaigns:detail' pk=campaign.pk %}">{{ campaign.name }}</a></td>
+                    <td>{{ campaign.template.name }}</td>
+                    <td>{{ campaign.scheduled_at|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if campaign.scheduled_at <= now %}
+                            <span class="badge badge-warn">Atrasado</span>
+                        {% else %}
+                            <span class="badge badge-off">Agendado</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="muted">Nenhuma campanha agendada no momento. Abra uma campanha em rascunho e use "Agendar para depois".</p>
+    {% endif %}
+</div>
+
+<p class="muted" style="margin-top: 14px;">
+    Sem um agendador externo (cron/Task Scheduler) chamando <code>python manage.py run_scheduled_campaigns</code> periodicamente,
+    os itens "Atrasado" ficam parados aqui até alguém clicar em "Executar agendamentos pendentes agora".
+</p>
+{% endblock %}

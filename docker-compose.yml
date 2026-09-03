@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-connecttalk}
+      POSTGRES_USER: ${DB_USER:-connecttalk}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-connecttalk_dev}
+    volumes:
+      - connect_talk_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-connecttalk} -d ${DB_NAME:-connecttalk}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    environment:
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-True}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-connecttalk-docker-development-key}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      DB_ENGINE: postgresql
+      DB_NAME: ${DB_NAME:-connecttalk}
+      DB_USER: ${DB_USER:-connecttalk}
+      DB_PASSWORD: ${DB_PASSWORD:-connecttalk_dev}
+      DB_HOST: db
+      DB_PORT: 5432
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "python manage.py migrate && gunicorn connect_talk.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+
+volumes:
+  connect_talk_postgres:
+

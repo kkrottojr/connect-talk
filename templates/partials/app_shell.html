@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-mark">C</span>
+            <span>Connect Talk<small>Atendimento e comunicação via WhatsApp</small></span>
+        </div>
+        <nav class="main-nav" aria-label="Navegação principal">
+            {% if membership.role != "agent" %}
+                <a href="{% url 'dashboard' %}" class="{% if nav_active == 'overview' %}active{% endif %}">Visão geral</a>
+                <a href="{% url 'campaigns:list' %}" class="{% if nav_active == 'campaigns' %}active{% endif %}">Campanhas</a>
+                <a href="{% url 'contacts:list' %}" class="{% if nav_active == 'contacts' %}active{% endif %}">Contatos</a>
+            {% endif %}
+            <a href="{% url 'conversations:list' %}" class="{% if nav_active == 'conversations' %}active{% endif %}">Conversas</a>
+            {% if membership.role != "agent" %}
+                <a href="{% url 'campaigns:schedule_list' %}" class="{% if nav_active == 'schedule' %}active{% endif %}">Agendamentos</a>
+                <a href="{% url 'campaigns:template_list' %}" class="{% if nav_active == 'templates' %}active{% endif %}">Templates</a>
+            {% endif %}
+            {% if membership.role == "admin" %}
+                <a href="{% url 'tenants:team_list' %}" class="{% if nav_active == 'team' %}active{% endif %}">Equipe</a>
+            {% endif %}
+        </nav>
+        <div class="user-card">
+            <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+            <span>{% if membership %}{{ membership.get_role_display }}{% else %}Sem empresa{% endif %}</span>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="logout-button">Sair</button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="main-area">
+        <header class="topbar">
+            <div>
+                <strong>{% if organization %}{{ organization.name }}{% else %}Configuração inicial{% endif %}</strong>
+                <span>Conta principal</span>
+            </div>
+            <span class="connection-status">WhatsApp não conectado</span>
+        </header>
+
+        <div class="content">
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <li class="message message-{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+{% endblock %}

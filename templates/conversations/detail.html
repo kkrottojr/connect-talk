@@ -1,0 +1,86 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}{{ log.contact.name|default:log.phone }} · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>{{ log.contact.name|default:"Contato removido" }}</h1>
+        <p class="muted">{{ log.phone }} · Campanha: {{ log.campaign.name }}</p>
+    </div>
+    <a class="button" href="{% url 'conversations:list' %}">Voltar</a>
+</div>
+
+{% if is_waiting_agent %}
+    <div class="mode-banner {% if log.assigned_to %}mode-dry_run{% else %}mode-test{% endif %}" style="margin-bottom: 16px;">
+        <div>
+            <strong>
+                {% if log.assigned_to %}Atendido por {{ log.assigned_to.get_full_name|default:log.assigned_to.username }}{% else %}Disponível para atendimento{% endif %}
+            </strong>
+            <span>
+                <form method="post" action="{% url 'conversations:claim' log_id=log.pk %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="detail">
+                    {% if log.assigned_to_id == request.user.id %}
+                        <input type="hidden" name="action" value="release">
+                        <button class="button" type="submit">Liberar atendimento</button>
+                    {% elif not log.assigned_to %}
+                        <button class="button button-primary" type="submit">Assumir atendimento</button>
+                    {% endif %}
+                </form>
+            </span>
+        </div>
+    </div>
+{% endif %}
+
+<div class="card">
+    <div class="chat-thread">
+        {% for msg in thread %}
+            <div class="chat-bubble {% if msg.direction == 'saida' %}chat-out{% else %}chat-in{% endif %}">
+                <strong>{{ msg.sender }}</strong>
+                <p>{{ msg.body }}</p>
+                <time>{{ msg.created_at|date:"d/m/Y H:i" }}</time>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if log.contact.opted_out %}
+        <p class="muted">Esse contato está descadastrado — não é possível enviar novas mensagens.</p>
+    {% elif needs_decision %}
+        <p class="muted">Aguardando a decisão do contato antes de continuar a conversa livre:</p>
+        <form method="post" action="{% url 'conversations:respond' log_id=log.pk %}" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="detail">
+            {% for button in log.campaign.template.buttons.all %}
+                <button
+                    class="button {% if button.action == 'parar' %}button-danger{% else %}button-primary{% endif %}"
+                    type="submit" name="button_id" value="{{ button.pk }}"
+                >{{ button.label }}</button>
+            {% endfor %}
+        </form>
+    {% else %}
+        <form class="import-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="direction" value="saida">
+            <div class="field-row">
+                <label for="body">Mensagem</label>
+                <textarea id="body" name="body" required placeholder="Escreva uma mensagem para o contato..."></textarea>
+            </div>
+            <button class="button button-primary" type="submit">Enviar</button>
+        </form>
+
+        <div class="chat-simulate">
+            <small>Simulação — não existe WhatsApp real conectado. Use isto só para demonstrar a resposta do contato.</small>
+            <form class="import-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="direction" value="entrada">
+                <div class="field-row">
+                    <label for="sim_body">Simular resposta do cliente</label>
+                    <textarea id="sim_body" name="body" required placeholder="O que o cliente responderia..."></textarea>
+                </div>
+                <button class="button" type="submit">Simular resposta</button>
+            </form>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

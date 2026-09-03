@@ -1,0 +1,97 @@
+{% extends "partials/app_shell.html" %}
+
+{% block title %}Conversas · Connect Talk{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>Conversas</h1><p class="muted">Simulação de resposta dos contatos aos botões de decisão dos templates.</p></div>
+</div>
+
+<section style="margin-bottom: 28px;">
+    <h2 style="font-size: 1rem;">Aguardando resposta ({{ pending|length }})</h2>
+    {% if pending %}
+        <div class="preview-list">
+            {% for log in pending %}
+                <div class="preview-item">
+                    <strong><a href="{% url 'conversations:detail' log_id=log.pk %}">{{ log.contact.name|default:"Contato removido" }} · {{ log.phone }}</a></strong>
+                    <p>{{ log.message_body }}</p>
+                    <form method="post" action="{% url 'conversations:respond' log_id=log.pk %}" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                        {% csrf_token %}
+                        {% for button in log.campaign.template.buttons.all %}
+                            <button
+                                class="button {% if button.action == 'parar' %}button-danger{% else %}button-primary{% endif %}"
+                                type="submit" name="button_id" value="{{ button.pk }}"
+                            >{{ button.label }}</button>
+                        {% endfor %}
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="muted">Nenhuma mensagem aguardando resposta no momento.</p>
+    {% endif %}
+</section>
+
+<section style="margin-bottom: 28px;">
+    <h2 style="font-size: 1rem;">Aguardando atendimento ({{ waiting_agent|length }})</h2>
+    {% if waiting_agent %}
+        <div class="card table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Contato</th><th>Telefone</th><th>Respondeu</th><th>Atendido por</th><th></th></tr></thead>
+                <tbody>
+                    {% for log in waiting_agent %}
+                    <tr>
+                        <td><a href="{% url 'conversations:detail' log_id=log.pk %}">{{ log.contact.name|default:"—" }}</a></td>
+                        <td>{{ log.phone }}</td>
+                        <td><span class="pill">{{ log.response_button.label }}</span></td>
+                        <td>
+                            {% if log.assigned_to %}
+                                {{ log.assigned_to.get_full_name|default:log.assigned_to.username }}
+                            {% else %}
+                                <span class="muted">disponível</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="post" action="{% url 'conversations:claim' log_id=log.pk %}">
+                                {% csrf_token %}
+                                {% if log.assigned_to_id == request.user.id %}
+                                    <input type="hidden" name="action" value="release">
+                                    <button class="button" type="submit">Liberar</button>
+                                {% elif not log.assigned_to %}
+                                    <button class="button button-primary" type="submit">Assumir</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted">Ninguém aguardando atendimento ainda.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2 style="font-size: 1rem;">Bloqueados ({{ blocked|length }})</h2>
+    {% if blocked %}
+        <div class="card table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Contato</th><th>Telefone</th><th>Respondeu</th><th>Em</th></tr></thead>
+                <tbody>
+                    {% for log in blocked %}
+                    <tr>
+                        <td><a href="{% url 'conversations:detail' log_id=log.pk %}">{{ log.contact.name|default:"—" }}</a></td>
+                        <td>{{ log.phone }}</td>
+                        <td><span class="pill pill-warn">{{ log.response_button.label }}</span></td>
+                        <td>{{ log.responded_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted">Nenhum contato bloqueado ainda.</p>
+    {% endif %}
+</section>
+{% endblock %}
