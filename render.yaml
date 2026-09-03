@@ -1,0 +1,25 @@
+# Blueprint do Render (render.com/docs/blueprint-spec). Em render.com/deploys,
+# "New +" > "Blueprint" apontando pra este repositório lê este arquivo sozinho.
+#
+# Usa SQLite (sem serviço de banco pago) — ótimo pra portfólio/demo, mas o
+# disco não é persistido entre deploys: cada novo deploy nasce com o banco
+# zerado. Rode `python manage.py seed_demo_data` pelo Shell do Render (depois
+# de criar um superusuário com `createsuperuser`) sempre que fizer isso.
+#
+# Pra persistência de verdade, troque DB_ENGINE para "postgresql", adicione um
+# serviço `databases:` e as variáveis DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT
+# (o projeto já suporta isso, ver README).
+services:
+  - type: web
+    name: connect-talk
+    runtime: docker
+    plan: free
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: WHATSAPP_SEND_MODE
+        value: dry_run
+      - key: WHATSAPP_PROVIDER
+        value: mock
